@@ -492,6 +492,9 @@ def item_chosen(button, m_id):
                                                         data['d_score'],
                                                         data['d_team']),
                             align='center'))
+    texts.append(urwid.Text(data['game_status'], align='center'))
+    if 'concluded' in data['game_status']:
+        texts.append(urwid.Text(data['winner'] + ' Victory!', align='center'))
     texts.append(urwid.Text(data['duration'], align='center'))
     texts.append(urwid.Text(''))  # header separator
     for x in [('radiant', 'r_team'), ('dire', 'd_team')]:
@@ -501,6 +504,11 @@ def item_chosen(button, m_id):
                 player,
                 data['player_data'][x[0]][player]['hero'])))
         texts.append(urwid.Text(''))  # separate teams
+    if data['series'] != 'Best of 1':
+        texts.append(urwid.Text('Series: {} {}:{} {}'.format(
+            data['r_team'], data['series_r'], data['series_d'], data['d_team']
+        )))
+    texts.append(urwid.Text('Net Worth Adv.: ' + data['nworth_adv']))
     texts.append(urwid.Text('Roshan: {}'.format(data['rosh'])))
     texts.append(urwid.Text('Time Started: {}'.format(data['match_time'])))
     texts.append(urwid.Text('Estimated Spectators: {:,d}'.format(
