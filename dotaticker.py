@@ -498,34 +498,46 @@ def item_chosen(button, m_id):
         texts.append(urwid.Text(data['winner'] + ' Victory!', align='center'))
     texts.append(urwid.Text(data['duration'], align='center'))
     texts.append(urwid.Text(''))  # header separator
-    for x in [('radiant', 'r_team'), ('dire', 'd_team')]:
+    for x in [('radiant', 'r_team', 'r_picks', 'r_bans'),
+              ('dire', 'd_team', 'd_picks', 'd_bans')]:
         team_name_header = urwid.Text('{}: '.format(data[x[1]]))
-        player_lvl_header = urwid.Text('LVL', align='right')
-        kda_header = urwid.Text('K/D/A', align='right')
-        net_header = urwid.Text('Net', align='right')
-        gx_header = urwid.Text('GPM/XPM', align='right')
+        player_lvl_header = urwid.Text('LVL')
+        kda_header = urwid.Text('K/D/A')
+        net_header = urwid.Text('Net')
+        gx_header = urwid.Text('GPM/XPM')
+        cs_header = urwid.Text('CS/DN')
         texts.append(urwid.Columns([team_name_header, (4, player_lvl_header),
-                                    (8, kda_header), net_header]))
+                                    (8, kda_header), (6, net_header),
+                                    (9, gx_header), (7, cs_header)]))
         for player in data['player_data'][x[0]].keys():
-            ctest1 = urwid.Text('{} ({}) '.format(
-                player, data['player_data'][x[0]][player]['hero']))
-            ctest2 = urwid.Text('{}/{}/{}'.format(
+            player_string = '{} ({}) '.format(
+                player, data['player_data'][x[0]][player]['hero'])
+            stat_player = urwid.Button(player_string)
+            stat_player._w = urwid.AttrMap(urwid.SelectableIcon(
+                ['', player_string], 0), None, 'reversed')
+            stat_kda = urwid.Text('{}/{}/{}'.format(
                 data['player_data'][x[0]][player]['kills'],
                 data['player_data'][x[0]][player]['deaths'],
                 data['player_data'][x[0]][player]['assists']
-            ), align='right')
-            ctest3 = urwid.Text(
-                'L' + str(data['player_data'][x[0]][player]['level']),
-                align='right')
-            ctest4 = urwid.Text(
-                str(data['player_data'][x[0]][player]['nworth']),
-                align='right')
-            ctest5 = urwid.Text('{}/{}'.format(
+            ))
+            stat_lvl = urwid.Text(
+                'L' + str(data['player_data'][x[0]][player]['level']))
+            stat_val = urwid.Text(
+                str(data['player_data'][x[0]][player]['nworth']))
+            stat_gx = urwid.Text('{}/{}'.format(
                 str(data['player_data'][x[0]][player]['gpm']),
                 str(data['player_data'][x[0]][player]['xpm']),
-                ), align='right')
-            texts.append(urwid.Columns([ctest1, (4, ctest3),
-                                        (8, ctest2), ctest4]))
+                ))
+            stat_cs = urwid.Text('{}/{}'.format(
+                str(data['player_data'][x[0]][player]['lh']),
+                str(data['player_data'][x[0]][player]['dn']),
+                ))
+            texts.append(urwid.Columns([stat_player, (4, stat_lvl),
+                                        (8, stat_kda),
+                                        (6, stat_val), (9, stat_gx),
+                                        (7, stat_cs)]))
+        texts.append(urwid.Text('Picks: ' + ', '.join(data[x[2]])))
+        texts.append(urwid.Text('Bans: ' + ', '.join(data[x[3]])))
         texts.append(urwid.Text(''))  # separate teams
     if data['series'] != 'Best of 1':
         texts.append(urwid.Text('Series: {} {}:{} {}'.format(
@@ -538,22 +550,22 @@ def item_chosen(button, m_id):
         data['spectators'])))
     texts.append(urwid.Text('Match ID: {}'.format(data['match_id'])))
     texts.append(urwid.Text(''))  # misc info separator
-    league_link = urwid.Button('[{}] League Homepage'.format(
-        data['league_name']))
-    texts.append(league_link)
+    league_link = urwid.Button(
+        '[{}] League Homepage'.format(data['league_name']))
+    texts.append(urwid.AttrMap(league_link, None, focus_map='reversed'))
     urwid.connect_signal(league_link, 'click', open_link,
                          user_arg=data['league_url'])
     db_link = urwid.Button('[Dotabuff] View TrueSight analysis for this match')
-    texts.append(db_link)
+    texts.append(urwid.AttrMap(db_link, None, focus_map='reversed'))
     urwid.connect_signal(db_link, 'click', open_link,
                          user_arg=data['dotabuff'])
-    td_link = urwid.Button('[TrackDota] View on TrackDota')
-    texts.append(td_link)
+    td_link = urwid.Button('[TrackDota] View this match on TrackDota')
+    texts.append(urwid.AttrMap(td_link, None, focus_map='reversed'))
     urwid.connect_signal(td_link, 'click', open_link,
                          user_arg='http://www.trackdota.com/matches/{}'.format(
                              data['match_id']))
-    od_link = urwid.Button('[OpenDota] View on OpenDota')
-    texts.append(od_link)
+    od_link = urwid.Button('[OpenDota] View this match on OpenDota')
+    texts.append(urwid.AttrMap(od_link, None, focus_map='reversed'))
     urwid.connect_signal(od_link, 'click', open_link,
                          user_arg='http://www.opendota.com/matches/{}'.format(
                              data['match_id']))
@@ -584,7 +596,7 @@ class BuildMenu(urwid.WidgetPlaceholder):
         self.original_widget = urwid.Overlay(
             urwid.LineBox(box, title),
             self.original_widget,
-            align='center', width=('relative', 60),
+            align='center', width=('relative', 75),
             valign='middle', height=('relative', 80),
             min_width=20, min_height=9)
         self.box_level += 1
