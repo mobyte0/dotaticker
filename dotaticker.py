@@ -12,6 +12,7 @@ that need to be done
 '''
 
 # TODO:
+# use liquipedia to get player/team info
 # finish up match page
 # text coloring?
 # player living status, respawn time
@@ -498,15 +499,37 @@ def item_chosen(button, m_id):
     texts.append(urwid.Text(data['duration'], align='center'))
     texts.append(urwid.Text(''))  # header separator
     for x in [('radiant', 'r_team'), ('dire', 'd_team')]:
-        texts.append(urwid.Text('{}:'.format(data[x[1]])))
+        team_name_header = urwid.Text('{}: '.format(data[x[1]]))
+        player_lvl_header = urwid.Text('LVL', align='right')
+        kda_header = urwid.Text('K/D/A', align='right')
+        net_header = urwid.Text('Net', align='right')
+        gx_header = urwid.Text('GPM/XPM', align='right')
+        texts.append(urwid.Columns([team_name_header, (4, player_lvl_header),
+                                    (8, kda_header), net_header]))
         for player in data['player_data'][x[0]].keys():
-            texts.append(urwid.Text('{} ({})'.format(
-                player,
-                data['player_data'][x[0]][player]['hero'])))
+            ctest1 = urwid.Text('{} ({}) '.format(
+                player, data['player_data'][x[0]][player]['hero']))
+            ctest2 = urwid.Text('{}/{}/{}'.format(
+                data['player_data'][x[0]][player]['kills'],
+                data['player_data'][x[0]][player]['deaths'],
+                data['player_data'][x[0]][player]['assists']
+            ), align='right')
+            ctest3 = urwid.Text(
+                'L' + str(data['player_data'][x[0]][player]['level']),
+                align='right')
+            ctest4 = urwid.Text(
+                str(data['player_data'][x[0]][player]['nworth']),
+                align='right')
+            ctest5 = urwid.Text('{}/{}'.format(
+                str(data['player_data'][x[0]][player]['gpm']),
+                str(data['player_data'][x[0]][player]['xpm']),
+                ), align='right')
+            texts.append(urwid.Columns([ctest1, (4, ctest3),
+                                        (8, ctest2), ctest4]))
         texts.append(urwid.Text(''))  # separate teams
     if data['series'] != 'Best of 1':
         texts.append(urwid.Text('Series: {} {}:{} {}'.format(
-            data['r_team'], data['series_r'], data['series_d'], data['d_team']
+            data['r_tag'], data['series_r'], data['series_d'], data['d_tag']
         )))
     texts.append(urwid.Text('Net Worth Adv.: ' + data['nworth_adv']))
     texts.append(urwid.Text('Roshan: {}'.format(data['rosh'])))
