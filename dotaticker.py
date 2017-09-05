@@ -79,7 +79,17 @@ def match(match_id):
     else:
         match_data['d_tag'] = match_json['dire_team']['team_tag']
     dur_seconds = divmod(live_json['duration'], 60)
-    match_data['duration'] = '{}m {}s'.format(dur_seconds[0], dur_seconds[1])
+    if dur_seconds[0] >= 60:
+        if dur_seconds[0] == 60:
+            match_data['duration'] = '1:00:{:02}'.format(dur_seconds[1])
+        else:
+            hrs = str(int(dur_seconds[0]/60))
+            match_data['duration'] = '{:02}:{:02}:{:02}'.format(
+                hrs,
+                dur_seconds-(hrs*60),
+                dur_seconds[1])
+    else:
+        match_data['duration'] = '{:02}:{:02}'.format(dur_seconds[0], dur_seconds[1])
     match_data['spectators'] = live_json['spectators']
     match_data['league_name'] = match_json['league']['name']
     match_data['league_url'] = match_json['league']['url']
@@ -464,6 +474,7 @@ def menu(title, choices):
 def open_link(_, url):
     webbrowser.open(url)
 
+
 def item_chosen(button, m_id):
     texts = []
     data = match(m_id[0])
@@ -481,6 +492,7 @@ def item_chosen(button, m_id):
                                                         data['d_score'],
                                                         data['d_team']),
                             align='center'))
+    texts.append(urwid.Text(data['duration'], align='center'))
     texts.append(urwid.Text(''))  # header separator
     for x in [('radiant', 'r_team'), ('dire', 'd_team')]:
         texts.append(urwid.Text('{}:'.format(data[x[1]])))
@@ -491,7 +503,7 @@ def item_chosen(button, m_id):
         texts.append(urwid.Text(''))  # separate teams
     texts.append(urwid.Text('Roshan: {}'.format(data['rosh'])))
     texts.append(urwid.Text('Time Started: {}'.format(data['match_time'])))
-    texts.append(urwid.Text('Estimated Spectators: {}'.format(
+    texts.append(urwid.Text('Estimated Spectators: {:,d}'.format(
         data['spectators'])))
     texts.append(urwid.Text('Match ID: {}'.format(data['match_id'])))
     texts.append(urwid.Text(''))  # misc info separator
