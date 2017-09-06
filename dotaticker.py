@@ -457,16 +457,8 @@ def menu_button(caption, callback, m_id):
     return urwid.AttrMap(button, None, focus_map='reversed')
 
 
-# def sub_menu(caption, choices):
-#     contents = menu(caption, choices)
-
-#     def open_menu(button):
-#         return top.open_box(contents, title='this is a sub menu')
-#     return menu_button([caption, '...'], open_menu)
-
-
 def menu(title, choices):
-#    body = [urwid.Text(title), urwid.Divider()]
+    # body = [urwid.Text(title), urwid.Divider()]
     body = []
     body.extend(choices)
     return urwid.ListBox(urwid.SimpleFocusListWalker(body))
@@ -474,6 +466,69 @@ def menu(title, choices):
 
 def open_link(_, url):
     webbrowser.open(url)
+
+
+def player_submenu(title, player_info, m_id):
+    texts = []
+    texts.append(urwid.Text('{} - L{} {}'.format(player_info['name'],
+                                                 player_info['level'],
+                                                 player_info['hero'])))
+    texts.append(urwid.Text(''))  # stats separator
+    texts.append(urwid.Text('K/D/A: {} / {} / {}\nCS: {} / {}'.format(
+        player_info['kills'], player_info['deaths'], player_info['assists'],
+        player_info['lh'], player_info['dn'])))
+    texts.append(urwid.Text(''))  # items separator
+    texts.append(urwid.Text('Items: ' + ', '.join(player_info['items'])))
+    texts.append(urwid.Text(''))  # skill build separator
+    texts.append(urwid.Text('Skill Build:'))
+    q_build = ['[ ]'] * player_info['level']
+    w_build = ['[ ]'] * player_info['level']
+    e_build = ['[ ]'] * player_info['level']
+    r_build = ['[ ]'] * player_info['level']
+    t_build = ['[ ]'] * player_info['level']
+    for q in player_info['build']['q']:
+        q_build[q] = '[Q]'
+    for w in player_info['build']['w']:
+        w_build[w] = '[W]'
+    for e in player_info['build']['e']:
+        e_build[e] = '[E]'
+    for r in player_info['build']['r']:
+        r_build[r] = '[R]'
+    for t in player_info['build']['t']:
+        t_build[t] = '[T]'
+    texts.append(urwid.Text(''.join(q_build) + '\n' +
+                            ''.join(w_build) + '\n' +
+                            ''.join(e_build) + '\n' +
+                            ''.join(r_build) + '\n' +
+                            ''.join(t_build)))
+    texts.append(urwid.Text(''))  # talents separator
+    texts.append(urwid.Text('Talents:'))
+    for each_talent in player_info['talents']:
+        texts.append(urwid.Text(each_talent))
+    texts.append(urwid.Text(''))  # button separator
+    texts.append(menu_button('Return to match', m_id=m_id, callback=go_back))
+    body = urwid.ListBox(urwid.SimpleFocusListWalker(texts))
+    top.open_box(body, title='dotaticker - {}'.format(
+        player_info['full_name']))
+
+
+def stream_list_submenu(title, data, m_id):
+    s_links = []
+    for new_s in data['stream_links']:
+        link_txt = '[{}] {} - {} [Viewers: {}]'.format(
+            new_s['provider'], new_s['channel'], new_s['title'],
+            new_s['viewers'])
+        add_link = urwid.Button(link_txt)
+        add_link._w = urwid.AttrMap(urwid.SelectableIcon(
+            ['', link_txt], 0), None, 'reversed')
+        urwid.connect_signal(add_link, 'click', open_link,
+                             user_arg=new_s['link'])
+        s_links.append(add_link)
+    s_links.append(urwid.Text(''))  # links separator
+    s_links.append(menu_button('Return to match', m_id=m_id, callback=go_back))
+    body = urwid.ListBox(urwid.SimpleFocusListWalker(s_links))
+    top.open_box(body, title='dotaticker - Live Streams for {} vs {}'.format(
+        data['r_tag'], data['d_tag']))
 
 
 def item_chosen(button, m_id):
@@ -515,6 +570,9 @@ def item_chosen(button, m_id):
             stat_player = urwid.Button(player_string)
             stat_player._w = urwid.AttrMap(urwid.SelectableIcon(
                 ['', player_string], 0), None, 'reversed')
+            urwid.connect_signal(stat_player, 'click', player_submenu,
+                                 user_args=[m_id,
+                                            data['player_data'][x[0]][player]])
             stat_kda = urwid.Text('{}/{}/{}'.format(
                 data['player_data'][x[0]][player]['kills'],
                 data['player_data'][x[0]][player]['deaths'],
@@ -550,6 +608,20 @@ def item_chosen(button, m_id):
         data['spectators'])))
     texts.append(urwid.Text('Match ID: {}'.format(data['match_id'])))
     texts.append(urwid.Text(''))  # misc info separator
+    try:
+        stream_list = urwid.Button('Live Streams List')
+        stream_list._w = urwid.AttrMap(urwid.SelectableIcon(
+            ['', 'Live Streams List'], 0), None, 'reversed')
+        urwid.connect_signal(stream_list, 'click', stream_list_submenu,
+                             user_args=[m_id, data])
+        texts.append(stream_list)
+    except AttributeError:
+        pass
+    # action_list = urwid.Button('Match Action Log')
+    # action_list._w = urwid.AttrMap(urwid.SelectableIcon(
+    #     ['', 'Match Action Log'], 0), None, 'reversed')
+    # texts.append(action_list)
+    texts.append(urwid.Text(''))  # links separator
     league_link = urwid.Button(
         '[{}] League Homepage'.format(data['league_name']))
     texts.append(urwid.AttrMap(league_link, None, focus_map='reversed'))
