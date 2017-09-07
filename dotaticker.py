@@ -1,4 +1,5 @@
 import math
+from operator import itemgetter
 import sys
 import webbrowser
 import datetime
@@ -32,29 +33,6 @@ except requests.exceptions.ConnectionError:
 except requests.exceptions.ConnectTimeout:
     sys.exit("The connection to TrackDota and/or the OpenDota API has timed out\
 . Please try again later.")
-
-# x = 'd'
-# if x == 'l':  # live
-#     id = '3409209430'
-# if x == 'd':  # done
-#     id = '3372726385'
-
-
-def live():
-    list_json = requests.get(
-        'http://www.trackdota.com/data/games_v2.json').json()
-    print("Most Popular Matches:")
-    each_game = list_json['finished_matches']
-    for game_no in each_game:
-        print('{} on {}'.format(
-            game_no['league']['name'],
-            datetime.datetime.fromtimestamp(game_no['time_started']).strftime(
-                '%a, %b %d at %I:%M %p %Z')))
-        print('{} vs {}'.format(
-            game_no['radiant_team']['team_name'],
-            game_no['dire_team']['team_name']))
-        print('{} spectators'.format(
-            game_no['spectators']))
 
 
 def match(match_id):
@@ -90,7 +68,8 @@ def match(match_id):
                 dur_seconds-(hrs*60),
                 dur_seconds[1])
     else:
-        match_data['duration'] = '{:02}:{:02}'.format(dur_seconds[0], dur_seconds[1])
+        match_data['duration'] = '{:02}:{:02}'.format(
+            dur_seconds[0], dur_seconds[1])
     match_data['spectators'] = live_json['spectators']
     match_data['league_name'] = match_json['league']['name']
     match_data['league_url'] = match_json['league']['url']
@@ -424,22 +403,6 @@ def quitprog(key):
     raise urwid.ExitMainLoop()
 
 
-# def matches_menu(title, choices):
-#     body = [urwid.Text(title), urwid.Divider()]
-#     for each_match in choices:
-#         button = urwid.Button(str(each_match['id']))
-#         urwid.connect_signal(button, 'click', view_match, each_match['id'])
-#         body.append(urwid.AttrMap(button, None, focus_map='reversed'))
-#     return urwid.ListBox(urwid.SimpleFocusListWalker(body))
-
-
-# def view_match(button, matchid):
-#     match_data = match(matchid)
-#     response = urwid.Text(['{}'.format(match_data)])
-#     done = urwid.AttrMap(urwid.Button('Ok', quitprog), None,
-#                          focus_map='reversed')
-#     top.open_box(urwid.Filler(urwid.Pile([response, done])))
-
 def go_back(key, _):
     top.close_box()
     return
@@ -470,7 +433,6 @@ def menu_button(caption, callback, m_id):
 
 
 def menu(title, choices):
-    # body = [urwid.Text(title), urwid.Divider()]
     body = []
     body.extend(choices)
     return urwid.ListBox(urwid.SimpleFocusListWalker(body))
@@ -662,20 +624,23 @@ def item_chosen(button, m_id):
         texts.append(urwid.AttrMap(league_link, None, focus_map='reversed'))
         urwid.connect_signal(league_link, 'click', open_link,
                              user_arg=data['league_url'])
-    db_link = urwid.Button('[Dotabuff] View TrueSight analysis for this match')
-    texts.append(urwid.AttrMap(db_link, None, focus_map='reversed'))
-    urwid.connect_signal(db_link, 'click', open_link,
-                         user_arg=data['dotabuff'])
-    td_link = urwid.Button('[TrackDota] View this match on TrackDota')
-    texts.append(urwid.AttrMap(td_link, None, focus_map='reversed'))
-    urwid.connect_signal(td_link, 'click', open_link,
-                         user_arg='http://www.trackdota.com/matches/{}'.format(
-                             data['match_id']))
-    od_link = urwid.Button('[OpenDota] View this match on OpenDota')
-    texts.append(urwid.AttrMap(od_link, None, focus_map='reversed'))
-    urwid.connect_signal(od_link, 'click', open_link,
-                         user_arg='http://www.opendota.com/matches/{}'.format(
-                             data['match_id']))
+        td_link = urwid.Button('[TrackDota] View this match on TrackDota')
+        texts.append(urwid.AttrMap(td_link, None, focus_map='reversed'))
+        urwid.connect_signal(td_link, 'click', open_link,
+                             user_arg='http://www.trackdota.com/matches/{}'.
+                             format(data['match_id']))
+    if data['game_status'] == 'The game has concluded.':
+        db_link = urwid.Button(
+            '[Dotabuff] View TrueSight analysis for this match')
+        texts.append(urwid.AttrMap(db_link, None, focus_map='reversed'))
+        urwid.connect_signal(db_link, 'click', open_link,
+                             user_arg=data['dotabuff'])
+        od_link = urwid.Button('[OpenDota] View this match on OpenDota')
+        texts.append(urwid.AttrMap(od_link, None, focus_map='reversed'))
+        urwid.connect_signal(od_link, 'click', open_link,
+                             user_arg='http://www.opendota.com/matches/{}'.
+                             format(data['match_id']))
+    texts.append(urwid.Text(''))
     done = menu_button('Return to menu', m_id=m_id, callback=go_back)
     texts.append(done)
     pile = urwid.ListBox(urwid.SimpleFocusListWalker(texts))
@@ -687,7 +652,7 @@ class BuildMenu(urwid.WidgetPlaceholder):
     def __init__(self, box):
         super(BuildMenu, self).__init__(urwid.SolidFill(' '))
         self.box_level = 0
-        self.open_box(box, title='dotaticker - Most Popular Matches')
+        self.open_box(box, title='dotaticker')
 
     def open_box(self, box, title):
         self.original_widget = urwid.Overlay(
@@ -702,10 +667,6 @@ class BuildMenu(urwid.WidgetPlaceholder):
         if self.box_level > 1:
             self.original_widget = self.original_widget[0]
             self.box_level -= 1
-            # del self.contents[self.focus_position :]
-        # if self.contents:
-        #     del self.contents[self.focus_position:]
-        #     self.focus_position = len(self.contents) - 1
 
     def keypress(self, size, key):
         if key == 'esc' and self.box_level > 1:
@@ -719,57 +680,84 @@ class BuildMenu(urwid.WidgetPlaceholder):
             return super(BuildMenu, self).keypress(size, key)
 
 
-matches_list = []
-# for each_match in pop_scrape():
-#     r_name = each_match['radiant_team']['team_name']
-#     d_name = each_match['dire_team']['team_name']
-#     if r_name == '':
-#         r_name = 'Radiant'
-#     if d_name == '':
-#         d_name = 'Dire'
-#     if each_match['league']['name'] == '':
-#         league_line = 'Independent'
-#     else:
-#         league_line = each_match['league']['name']
-#     match_line = "{} vs {}".format(r_name, d_name)
-#     match_id = str(each_match['id'])
-#     matches_list.append(menu_button("{}\n{}".format(
-#         league_line, match_line), callback=item_chosen, m_id=[match_id]))
-
-live_data = live_scrape()
-live_list = []
+live_list, pop_list, rec_list, button_list = [], [], [], []
 for x in live_scrape():
     for y in x['games']:
-        r_name = y['radiant_team']['team_name']
-        d_name = y['dire_team']['team_name']
-        if r_name == '':
-            r_name = 'Radiant'
-        if d_name == '':
-            d_name = 'Dire'
-        if y['league']['name'] == '':
-            league_line = 'Independent'
-        else:
-            league_line = y['league']['name']
-        match_line = "{} vs {}".format(r_name, d_name)
-        match_id = str(y['id'])
-        live_list.append(menu_button("{}\n{}".format(
-            league_line, match_line), callback=item_chosen, m_id=[match_id]))
-# for each_match in live_list:
-#     r_name = each_match['radiant_team']['team_name']
-#     d_name = each_match['dire_team']['team_name']
-#     if r_name == '':
-#         r_name = 'Radiant'
-#     if d_name == '':
-#         d_name = 'Dire'
-#     if each_match['league']['name'] == '':
-#         league_line = 'Independent'
-#     else:
-#         league_line = each_match['league']['name']
-#     match_line = "{} vs {}".format(r_name, d_name)
-#     match_id = str(each_match['id'])
-
-live_list.append(urwid.Text(
-    '\nPowered by TrackDota (https://www.trackdota.com)'))
-menu_top = menu('Most Popular Matches', live_list)
+        live_list.append(y)
+for x in pop_scrape():
+    pop_list.append(x)
+for x in recent_scrape():
+    rec_list.append(x)
+live_list = sorted(live_list, key=itemgetter('spectators'), reverse=True)
+button_list.append(urwid.Text('Live Matches'))
+button_list.append(urwid.Text(''))
+mainmenu_list = 5
+if len(live_list) < mainmenu_list:
+    mainmenu_list = len(live_list)
+for x in range(0, mainmenu_list):
+    r_name = live_list[x]['radiant_team']['team_name']
+    d_name = live_list[x]['dire_team']['team_name']
+    if r_name == '':
+        r_name = 'Radiant'
+    if d_name == '':
+        d_name = 'Dire'
+    if live_list[x]['league']['name'] == '':
+        league_line = 'Independent'
+    else:
+        league_line = live_list[x]['league']['name']
+    match_line = "{} vs {}".format(r_name, d_name)
+    match_id = str(live_list[x]['id'])
+    button_list.append(menu_button("{}\n{}".format(
+        league_line, match_line), callback=item_chosen, m_id=[match_id]))
+button_list.append(urwid.Text(''))
+pop_list = sorted(pop_list, key=itemgetter('spectators'), reverse=True)
+button_list.append(urwid.Text('Most Popular Matches'))
+button_list.append(urwid.Text(''))
+mainmenu_list = 5
+if len(pop_list) < mainmenu_list:
+    mainmenu_list = len(pop_list)
+for x in range(0, mainmenu_list):
+    r_name = pop_list[x]['radiant_team']['team_name']
+    d_name = pop_list[x]['dire_team']['team_name']
+    if r_name == '':
+        r_name = 'Radiant'
+    if d_name == '':
+        d_name = 'Dire'
+    if pop_list[x]['league']['name'] == '':
+        league_line = 'Independent'
+    else:
+        league_line = pop_list[x]['league']['name']
+    match_line = "{} vs {}".format(r_name, d_name)
+    match_id = str(pop_list[x]['id'])
+    button_list.append(menu_button("{}\n{}".format(
+        league_line, match_line), callback=item_chosen, m_id=[match_id]))
+button_list.append(urwid.Text(''))
+rec_list = sorted(rec_list, key=itemgetter('time_started'), reverse=True)
+button_list.append(urwid.Text('Most Recent Matches'))
+button_list.append(urwid.Text(''))
+mainmenu_list = 5
+if len(rec_list) < mainmenu_list:
+    mainmenu_list = len(rec_list)
+for x in range(0, mainmenu_list):
+    r_name = rec_list[x]['radiant_team']['team_name']
+    d_name = rec_list[x]['dire_team']['team_name']
+    if r_name == '':
+        r_name = 'Radiant'
+    if d_name == '':
+        d_name = 'Dire'
+    if rec_list[x]['league']['name'] == '':
+        league_line = 'Independent'
+    else:
+        league_line = rec_list[x]['league']['name']
+    match_line = "{} vs {}".format(r_name, d_name)
+    match_id = str(rec_list[x]['id'])
+    button_list.append(menu_button("{}\n{}".format(
+        league_line, match_line), callback=item_chosen, m_id=[match_id]))
+button_list.append(urwid.Text(''))
+td_link = urwid.Button('Powered by TrackDota [https://www.trackdota.com]')
+button_list.append(urwid.AttrMap(td_link, None, focus_map='reversed'))
+urwid.connect_signal(td_link, 'click', open_link,
+                     user_arg='https://www.trackdota.com/')
+menu_top = menu('', button_list)
 top = BuildMenu(menu_top)
 urwid.MainLoop(top, palette=[('reversed', 'standout', '')]).run()
