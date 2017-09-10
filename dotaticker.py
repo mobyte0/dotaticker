@@ -13,6 +13,7 @@ that need to be done
 '''
 
 # TODO:
+# add key bindings for emacs/vim users
 # tournament view
 # use liquipedia to get player/team info
 # text coloring?
@@ -520,6 +521,117 @@ def action_submenu(title, data, m_id):
         data['r_tag'], data['d_tag']))
 
 
+def live_sub(button, m_id):
+    texts = []
+    live_list = []
+    for x in live_scrape():
+        for y in x['games']:
+            live_list.append(y)
+    texts.append(urwid.Text(
+        'Live professional matches being played right now'))
+    texts.append(urwid.Text(''))
+    if len(live_list) > 0:
+        for x in live_list:
+            r_name = x['radiant_team']['team_name']
+            d_name = x['dire_team']['team_name']
+            if r_name == '':
+                r_name = 'Radiant'
+            if d_name == '':
+                d_name = 'Dire'
+            if x['league']['name'] == '':
+                league_line = 'Independent'
+            else:
+                league_line = x['league']['name']
+            match_line = "{} vs {}".format(r_name, d_name)
+            match_id = str(x['id'])
+            texts.append(menu_button("{}\n{}".format(
+                league_line, match_line),
+                                     callback=item_chosen, m_id=[match_id]))
+    texts.append(urwid.Text(''))
+    done = menu_button('Return to main menu', m_id=m_id, callback=go_back)
+    texts.append(done)
+    texts.append(urwid.Text(''))
+    td_link = urwid.Button('Powered by TrackDota [https://www.trackdota.com]')
+    texts.append(urwid.AttrMap(td_link, None, focus_map='reversed'))
+    urwid.connect_signal(td_link, 'click', open_link,
+                         user_arg='https://www.trackdota.com/')
+    pile = urwid.ListBox(urwid.SimpleFocusListWalker(texts))
+    top.open_box(pile, title='dotaticker - Live Matches')
+
+
+def pop_sub(button, m_id):
+    texts = []
+    pop_list = []
+    for x in pop_scrape():
+        pop_list.append(x)
+    texts.append(urwid.Text('Matches played within the last 24 hours with\
+ over 3,000 spectators'))
+    texts.append(urwid.Text(''))
+    if len(pop_list) > 0:
+        for x in pop_list:
+            r_name = x['radiant_team']['team_name']
+            d_name = x['dire_team']['team_name']
+            if r_name == '':
+                r_name = 'Radiant'
+            if d_name == '':
+                d_name = 'Dire'
+            if x['league']['name'] == '':
+                league_line = 'Independent'
+            else:
+                league_line = x['league']['name']
+            match_line = "{} vs {}".format(r_name, d_name)
+            match_id = str(x['id'])
+            texts.append(menu_button("{}\n{}".format(
+                league_line, match_line),
+                                     callback=item_chosen, m_id=[match_id]))
+    texts.append(urwid.Text(''))
+    done = menu_button('Return to main menu', m_id=m_id, callback=go_back)
+    texts.append(done)
+    texts.append(urwid.Text(''))
+    td_link = urwid.Button('Powered by TrackDota [https://www.trackdota.com]')
+    texts.append(urwid.AttrMap(td_link, None, focus_map='reversed'))
+    urwid.connect_signal(td_link, 'click', open_link,
+                         user_arg='https://www.trackdota.com/')
+    pile = urwid.ListBox(urwid.SimpleFocusListWalker(texts))
+    top.open_box(pile, title='dotaticker - Most Popular Matches')
+
+
+def rec_sub(button, m_id):
+    texts = []
+    rec_list = []
+    for x in recent_scrape():
+        rec_list.append(x)
+    texts.append(urwid.Text('Most recent 30 matches played'))
+    texts.append(urwid.Text(''))
+    if len(rec_list) > 0:
+        for x in rec_list:
+            r_name = x['radiant_team']['team_name']
+            d_name = x['dire_team']['team_name']
+            if r_name == '':
+                r_name = 'Radiant'
+            if d_name == '':
+                d_name = 'Dire'
+            if x['league']['name'] == '':
+                league_line = 'Independent'
+            else:
+                league_line = x['league']['name']
+            match_line = "{} vs {}".format(r_name, d_name)
+            match_id = str(x['id'])
+            texts.append(menu_button("{}\n{}".format(
+                league_line, match_line),
+                                     callback=item_chosen, m_id=[match_id]))
+    texts.append(urwid.Text(''))
+    done = menu_button('Return to main menu', m_id=m_id, callback=go_back)
+    texts.append(done)
+    texts.append(urwid.Text(''))
+    td_link = urwid.Button('Powered by TrackDota [https://www.trackdota.com]')
+    texts.append(urwid.AttrMap(td_link, None, focus_map='reversed'))
+    urwid.connect_signal(td_link, 'click', open_link,
+                         user_arg='https://www.trackdota.com/')
+    pile = urwid.ListBox(urwid.SimpleFocusListWalker(texts))
+    top.open_box(pile, title='dotaticker - Most Recent Matches')
+
+
 def item_chosen(button, m_id):
     texts = []
     data = match(m_id[0])
@@ -689,7 +801,8 @@ for x in pop_scrape():
 for x in recent_scrape():
     rec_list.append(x)
 live_list = sorted(live_list, key=itemgetter('spectators'), reverse=True)
-button_list.append(urwid.Text('Live Matches'))
+# button_list.append(urwid.Text('Live Matches'))
+button_list.append(menu_button('Live Matches', callback=live_sub, m_id=[None]))
 button_list.append(urwid.Text(''))
 mainmenu_list = 5
 if len(live_list) < mainmenu_list:
@@ -711,7 +824,9 @@ for x in range(0, mainmenu_list):
         league_line, match_line), callback=item_chosen, m_id=[match_id]))
 button_list.append(urwid.Text(''))
 pop_list = sorted(pop_list, key=itemgetter('spectators'), reverse=True)
-button_list.append(urwid.Text('Most Popular Matches'))
+# button_list.append(urwid.Text('Most Popular Matches'))
+button_list.append(menu_button('Most Popular Matches',
+                               callback=pop_sub, m_id=[None]))
 button_list.append(urwid.Text(''))
 mainmenu_list = 5
 if len(pop_list) < mainmenu_list:
@@ -733,7 +848,9 @@ for x in range(0, mainmenu_list):
         league_line, match_line), callback=item_chosen, m_id=[match_id]))
 button_list.append(urwid.Text(''))
 rec_list = sorted(rec_list, key=itemgetter('time_started'), reverse=True)
-button_list.append(urwid.Text('Most Recent Matches'))
+# button_list.append(urwid.Text('Most Recent Matches'))
+button_list.append(menu_button('Most Recent Matches',
+                               callback=rec_sub, m_id=[None]))
 button_list.append(urwid.Text(''))
 mainmenu_list = 5
 if len(rec_list) < mainmenu_list:
