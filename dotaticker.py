@@ -1,5 +1,6 @@
 import math
 from operator import itemgetter
+import socket
 import sys
 import webbrowser
 import datetime
@@ -28,6 +29,9 @@ try:
     dotaconstants/master/build/items.json''', timeout=30)
     item_data = requests.get('''https://raw.githubusercontent.com/odota/\
 dotaconstants/master/build/items.json''').json()
+except socket.timeout:
+    sys.exit("The connection to TrackDota and/or the OpenDota API has timed out\
+. Please try again later.")
 except requests.exceptions.ConnectionError:
     sys.exit("Unable to connect to TrackDota and/or the OpenDota API. Please\
  try again later.")
@@ -489,7 +493,9 @@ def player_submenu(title, player_info, m_id):
 
 def stream_list_submenu(title, data, m_id):
     s_links = []
-    for new_s in data['stream_links']:
+    # viewer_order = sorted(data['stream_links'], key=itemgetter('viewers'))
+    viewer_order = data['stream_links']
+    for new_s in viewer_order:
         link_txt = '[{}] {} - {} [Viewers: {}]'.format(
             new_s['provider'], new_s['channel'], new_s['title'],
             new_s['viewers'])
