@@ -67,10 +67,11 @@ def match(match_id):
         if dur_seconds[0] == 60:
             match_data['duration'] = '1:00:{:02}'.format(dur_seconds[1])
         else:
-            hrs = str(int(dur_seconds[0]/60))
+            hrs = int(dur_seconds[0]/60)
+            mins = dur_seconds[0] - (int(hrs)*60)
             match_data['duration'] = '{:02}:{:02}:{:02}'.format(
                 hrs,
-                dur_seconds-(hrs*60),
+                mins,
                 dur_seconds[1])
     else:
         match_data['duration'] = '{:02}:{:02}'.format(
@@ -227,8 +228,11 @@ def players(lstats, cstats):
                                                       'r': [],
                                                       't': []}
                     for x in range(0, 5):
-                        lvlup = [i for i, lvl in enumerate(
-                            p_info['abilities'][x]['build']) if lvl == 1]
+                        try:
+                            lvlup = [i for i, lvl in enumerate(
+                                p_info['abilities'][x]['build']) if lvl == 1]
+                        except IndexError:
+                            pass
                         if x == 0:
                             players[side][p_stat]['build']['t'] = lvlup
                         elif x == 1:
@@ -449,9 +453,13 @@ def open_link(_, url):
 
 def player_submenu(title, player_info, m_id):
     texts = []
-    texts.append(urwid.Text('{} - L{} {}'.format(player_info['name'],
-                                                 player_info['level'],
-                                                 player_info['hero'])))
+    try:
+        texts.append(urwid.Text('{} - L{} {}'.format(player_info['name'],
+                                                     player_info['level'],
+                                                     player_info['hero'])))
+    except KeyError:
+        texts.append(urwid.Text('{} - L{}'.format(player_info['name'],
+                                                  player_info['level'])))
     texts.append(urwid.Text(''))  # stats separator
     texts.append(urwid.Text('K/D/A: {} / {} / {}\nCS: {} / {}'.format(
         player_info['kills'], player_info['deaths'], player_info['assists'],
@@ -493,8 +501,9 @@ def player_submenu(title, player_info, m_id):
 
 def stream_list_submenu(title, data, m_id):
     s_links = []
-    # viewer_order = sorted(data['stream_links'], key=itemgetter('viewers'))
-    viewer_order = data['stream_links']
+    viewer_order = sorted(data['stream_links'], key=itemgetter('viewers'),
+                          reverse=True)
+    # viewer_order = data['stream_links']
     for new_s in viewer_order:
         link_txt = '[{}] {} - {} [Viewers: {}]'.format(
             new_s['provider'], new_s['channel'], new_s['title'],
@@ -674,8 +683,11 @@ def item_chosen(button, m_id):
                                     (8, kda_header), (6, net_header),
                                     (9, gx_header), (7, cs_header)]))
         for player in data['player_data'][x[0]].keys():
-            player_string = '{} ({}) '.format(
-                player, data['player_data'][x[0]][player]['hero'])
+            try:
+                player_string = '{} ({}) '.format(
+                    player, data['player_data'][x[0]][player]['hero'])
+            except KeyError:
+                player_string = '{}'.format(player)
             stat_player = urwid.Button(player_string)
             stat_player._w = urwid.AttrMap(urwid.SelectableIcon(
                 ['', player_string], 0), None, 'reversed')
