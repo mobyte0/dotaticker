@@ -1,4 +1,5 @@
 import math
+import json
 from operator import itemgetter
 import socket
 import sys
@@ -147,15 +148,15 @@ def match(match_id):
                                            'channel': each_stream['channel'],
                                            'link': link})
     if live_json == 'false':
-        match_data['game_status'] = 'The game is paused.'
+        match_data['game_status'] = 'This game is paused.'
     else:
-        match_data['game_status'] = 'The game is currently in progress.'
+        match_data['game_status'] = 'This game is live now!'
     try:
         if live_json['winner'] == 0:
-            match_data['game_status'] = 'The game has concluded.'
+            match_data['game_status'] = 'This game has concluded.'
             match_data['winner'] = match_data['r_team']
         elif live_json['winner'] == 1:
-            match_data['game_status'] = 'The game has concluded.'
+            match_data['game_status'] = 'This game has concluded.'
             match_data['winner'] = match_data['d_team']
     except KeyError:
         match_data['winner'] = None
@@ -647,9 +648,24 @@ def rec_sub(button, m_id):
     top.open_box(pile, title='dotaticker - Most Recent Matches')
 
 
+def error_popup(button, m_id):
+    texts = []
+    texts.append(urwid.Text('''There was an error loading this match.
+
+It is possible that the match has not started yet.'''))
+    texts.append(urwid.Text(''))
+    done = menu_button('Return to menu', m_id=m_id, callback=go_back)
+    texts.append(done)
+    pile = urwid.ListBox(urwid.SimpleFocusListWalker(texts))
+    top.open_box(pile, title='dotaticker - Error')
+
+
 def item_chosen(button, m_id):
     texts = []
-    data = match(m_id[0])
+    try:
+        data = match(m_id[0])
+    except json.decoder.JSONDecodeError:
+        return error_popup(button, m_id)
     if data['league_name'] == '':
         data['league_name'] = 'Independent'
     if data['series'] == 'Best of 1':
@@ -759,7 +775,7 @@ def item_chosen(button, m_id):
         urwid.connect_signal(td_link, 'click', open_link,
                              user_arg='http://www.trackdota.com/matches/{}'.
                              format(data['match_id']))
-    if data['game_status'] == 'The game has concluded.':
+    if data['game_status'] == 'This game has concluded.':
         db_link = urwid.Button(
             '[Dotabuff] View TrueSight analysis for this match')
         texts.append(urwid.AttrMap(db_link, None, focus_map='reversed'))
